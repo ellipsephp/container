@@ -1,6 +1,6 @@
 <?php declare(strict_types=1);
 
-namespace Ellipse\Container;
+namespace Ellipse;
 
 use Psr\Container\ContainerInterface;
 

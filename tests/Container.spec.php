@@ -3,7 +3,7 @@
 use Psr\Container\ContainerInterface;
 use Psr\Container\NotFoundExceptionInterface;
 
-use Ellipse\Container\Container;
+use Ellipse\Container;
 use Interop\Container\ServiceProviderInterface;
 
 interface ContainerCallable

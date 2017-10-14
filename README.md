@@ -77,7 +77,7 @@ class ServiceProviderB implements ServiceProviderInterface
 
 namespace App;
 
-use Ellipse\Container\Container;
+use Ellipse\Container;
 
 // Get a container with a list of service providers.
 $container = new Container([

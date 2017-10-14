@@ -30,7 +30,7 @@
     },
     "autoload": {
         "psr-4": {
-            "Ellipse\\Container\\": "src"
+            "Ellipse\\": "src"
         }
     },
     "extra": {

@@ -1,29 +1,21 @@
 <?php
 
-use Psr\Container\ContainerInterface;
-use Psr\Container\NotFoundExceptionInterface;
+use function Eloquent\Phony\mock;
 
-use Ellipse\Container;
+use Psr\Container\ContainerInterface;
+
 use Interop\Container\ServiceProviderInterface;
 
-interface ContainerCallable
-{
-    public function __invoke();
-}
+use Ellipse\Container;
+use Ellipse\Container\Exceptions\NotFoundException;
 
 describe('Container', function () {
-
-    afterEach(function () {
-
-        Mockery::close();
-
-    });
 
     it('should implement ContainerInterface', function () {
 
         $container = new Container();
 
-        expect($container)->to->be->an->instanceof(ContainerInterface::class);
+        expect($container)->toBeAnInstanceOf(ContainerInterface::class);
 
     });
 
@@ -31,31 +23,32 @@ describe('Container', function () {
 
         beforeEach(function () {
 
-            $provider = Mockery::mock(ServiceProviderInterface::class);
+            $this->provider = mock(ServiceProviderInterface::class);
 
-            $provider->shouldReceive('getFactories')->once()
-                ->andReturn(['id' => function () {}]);
-
-            $provider->shouldReceive('getExtensions')->once()
-                ->andReturn([]);
-
-            $this->container = new Container([$provider]);
+            $this->provider->getFactories->returns([]);
+            $this->provider->getExtensions->returns([]);
 
         });
 
         it('should return true when the id is defined', function () {
 
-            $test = $this->container->has('id');
+            $this->provider->getFactories->returns(['id' => function () {}]);
 
-            expect($test)->to->be->true();
+            $container = new Container([$this->provider->get()]);
+
+            $test = $container->has('id');
+
+            expect($test)->toBe(true);
 
         });
 
         it('should return false when the id is defined', function () {
 
-            $test = $this->container->has('notfound');
+            $container = new Container([$this->provider->get()]);
 
-            expect($test)->to->be->false();
+            $test = $container->has('id');
+
+            expect($test)->toBe(false);
 
         });
 
@@ -63,201 +56,144 @@ describe('Container', function () {
 
     describe('->get()', function () {
 
+        beforeEach(function () {
+
+            $this->provider1 = mock(ServiceProviderInterface::class);
+            $this->provider2 = mock(ServiceProviderInterface::class);
+            $this->provider3 = mock(ServiceProviderInterface::class);
+            $this->factory1 = mock(['__invoke' => function () {}]);
+            $this->factory2 = mock(['__invoke' => function () {}]);
+            $this->extension1 = mock(['__invoke' => function () {}]);
+            $this->extension2 = mock(['__invoke' => function () {}]);
+            $this->extension3 = mock(['__invoke' => function () {}]);
+
+            $this->provider1->getFactories->returns([]);
+            $this->provider1->getExtensions->returns([]);
+            $this->provider2->getFactories->returns([]);
+            $this->provider2->getExtensions->returns([]);
+            $this->provider3->getFactories->returns([]);
+            $this->provider3->getExtensions->returns([]);
+
+        });
+
         it('should run the factory associated with the given id', function () {
 
-            $provider = Mockery::mock(ServiceProviderInterface::class);
-            $factory = Mockery::mock(ContainerCallable::class);
+            $this->provider1->getFactories->returns(['id' => $this->factory1->get()]);
 
-            $provider->shouldReceive('getFactories')->once()
-                ->andReturn(['id' => $factory]);
+            $container = new Container([$this->provider1->get()]);
 
-            $provider->shouldReceive('getExtensions')->once()
-                ->andReturn([]);
-
-            $container = new Container([$provider]);
-
-            $factory->shouldReceive('__invoke')->once()
-                ->with($container)
-                ->andReturn('service');
+            $this->factory1->__invoke->with($container)->returns('service');
 
             $test = $container->get('id');
 
-            expect($test)->to->be->equal('service');
+            expect($test)->toEqual('service');
+            $this->factory1->__invoke->called();
 
         });
 
         it('should run the last factory associated with the given id', function () {
 
-            $provider1 = Mockery::mock(ServiceProviderInterface::class);
-            $provider2 = Mockery::mock(ServiceProviderInterface::class);
-            $factory1 = Mockery::mock(ContainerCallable::class);
-            $factory2 = Mockery::mock(ContainerCallable::class);
+            $this->provider1->getFactories->returns(['id' => $this->factory1->get()]);
+            $this->provider2->getFactories->returns(['id' => $this->factory2->get()]);
 
-            $provider1->shouldReceive('getFactories')->once()
-                ->andReturn(['id' => $factory1]);
+            $container = new Container([
+                $this->provider1->get(),
+                $this->provider2->get(),
+            ]);
 
-            $provider1->shouldReceive('getExtensions')->once()
-                ->andReturn([]);
-
-            $provider2->shouldReceive('getFactories')->once()
-                ->andReturn(['id' => $factory2]);
-
-            $provider2->shouldReceive('getExtensions')->once()
-                ->andReturn([]);
-
-            $container = new Container([$provider1, $provider2]);
-
-            $factory1->shouldNotReceive('__invoke');
-
-            $factory2->shouldReceive('__invoke')->once()
-                ->with($container)
-                ->andReturn('service');
+            $this->factory2->__invoke->with($container)->returns('service');
 
             $test = $container->get('id');
 
-            expect($test)->to->be->equal('service');
+            expect($test)->toEqual('service');
+            $this->factory2->__invoke->called();
 
         });
 
         it('should run the extensions associated with the given id with null as parameter when no factory is defined', function () {
 
-            $provider1 = Mockery::mock(ServiceProviderInterface::class);
-            $provider2 = Mockery::mock(ServiceProviderInterface::class);
-            $extension1 = Mockery::mock(ContainerCallable::class);
-            $extension2 = Mockery::mock(ContainerCallable::class);
+            $this->provider1->getExtensions->returns(['id' => $this->extension1->get()]);
+            $this->provider2->getExtensions->returns(['id' => $this->extension2->get()]);
 
-            $provider1->shouldReceive('getFactories')->once()
-                ->andReturn([]);
+            $container = new Container([
+                $this->provider1->get(),
+                $this->provider2->get(),
+            ]);
 
-            $provider1->shouldReceive('getExtensions')->once()
-                ->andReturn(['id' => $extension1]);
-
-            $provider2->shouldReceive('getFactories')->once()
-                ->andReturn([]);
-
-            $provider2->shouldReceive('getExtensions')->once()
-                ->andReturn(['id' => $extension2]);
-
-            $container = new Container([$provider1, $provider2]);
-
-            $extension1->shouldReceive('__invoke')->once()
-                ->with($container, null)
-                ->andReturn('service1');
-
-            $extension2->shouldReceive('__invoke')->once()
-                ->with($container, 'service1')
-                ->andReturn('service2');
+            $this->extension1->__invoke->with($container, null)->returns('service1');
+            $this->extension2->__invoke->with($container, 'service1')->returns('service2');
 
             $test = $container->get('id');
 
-            expect($test)->to->be->equal('service2');
+            expect($test)->toEqual('service2');
+            $this->extension1->__invoke->called();
+            $this->extension2->__invoke->called();
 
         });
 
         it('should run the extensions associated with the given id with the service built by the factory as parameter', function () {
 
-            $provider1 = Mockery::mock(ServiceProviderInterface::class);
-            $provider2 = Mockery::mock(ServiceProviderInterface::class);
-            $provider3 = Mockery::mock(ServiceProviderInterface::class);
-            $factory = Mockery::mock(ContainerCallable::class);
-            $extension1 = Mockery::mock(ContainerCallable::class);
-            $extension2 = Mockery::mock(ContainerCallable::class);
+            $this->provider1->getFactories->returns(['id' => $this->factory1->get()]);
+            $this->provider1->getExtensions->returns(['id' => $this->extension1->get()]);
+            $this->provider2->getExtensions->returns(['id' => $this->extension2->get()]);
+            $this->provider3->getExtensions->returns(['id' => $this->extension3->get()]);
 
-            $provider1->shouldReceive('getFactories')->once()
-                ->andReturn(['id' => $factory]);
+            $container = new Container([
+                $this->provider1->get(),
+                $this->provider2->get(),
+                $this->provider3->get(),
+            ]);
 
-            $provider1->shouldReceive('getExtensions')->once()
-                ->andReturn([]);
-
-            $provider2->shouldReceive('getFactories')->once()
-                ->andReturn([]);
-
-            $provider2->shouldReceive('getExtensions')->once()
-                ->andReturn(['id' => $extension1]);
-
-            $provider3->shouldReceive('getFactories')->once()
-                ->andReturn([]);
-
-            $provider3->shouldReceive('getExtensions')->once()
-                ->andReturn(['id' => $extension2]);
-
-            $container = new Container([$provider1, $provider2, $provider3]);
-
-            $factory->shouldReceive('__invoke')->once()
-                ->with($container)
-                ->andReturn('service1');
-
-            $extension1->shouldReceive('__invoke')->once()
-                ->with($container, 'service1')
-                ->andReturn('service2');
-
-            $extension2->shouldReceive('__invoke')->once()
-                ->with($container, 'service2')
-                ->andReturn('service3');
+            $this->factory1->__invoke->with($container)->returns('service1');
+            $this->extension1->__invoke->with($container, 'service1')->returns('service2');
+            $this->extension2->__invoke->with($container, 'service2')->returns('service3');
+            $this->extension3->__invoke->with($container, 'service3')->returns('service4');
 
             $test = $container->get('id');
 
-            expect($test)->to->be->equal('service3');
+            expect($test)->toEqual('service4');
+            $this->factory1->__invoke->called();
+            $this->extension1->__invoke->called();
+            $this->extension2->__invoke->called();
+            $this->extension3->__invoke->called();
 
         });
 
         it('should not care about the order of the service providers', function () {
 
-            $provider1 = Mockery::mock(ServiceProviderInterface::class);
-            $provider2 = Mockery::mock(ServiceProviderInterface::class);
-            $provider3 = Mockery::mock(ServiceProviderInterface::class);
-            $factory = Mockery::mock(ContainerCallable::class);
-            $extension1 = Mockery::mock(ContainerCallable::class);
-            $extension2 = Mockery::mock(ContainerCallable::class);
+            $this->provider1->getFactories->returns(['id' => $this->factory1->get()]);
+            $this->provider1->getExtensions->returns(['id' => $this->extension1->get()]);
+            $this->provider2->getExtensions->returns(['id' => $this->extension2->get()]);
+            $this->provider3->getExtensions->returns(['id' => $this->extension3->get()]);
 
-            $provider1->shouldReceive('getFactories')->once()
-                ->andReturn(['id' => $factory]);
+            $container = new Container([
+                $this->provider2->get(),
+                $this->provider1->get(),
+                $this->provider3->get(),
+            ]);
 
-            $provider1->shouldReceive('getExtensions')->once()
-                ->andReturn([]);
-
-            $provider2->shouldReceive('getFactories')->once()
-                ->andReturn([]);
-
-            $provider2->shouldReceive('getExtensions')->once()
-                ->andReturn(['id' => $extension1]);
-
-            $provider3->shouldReceive('getFactories')->once()
-                ->andReturn([]);
-
-            $provider3->shouldReceive('getExtensions')->once()
-                ->andReturn(['id' => $extension2]);
-
-            $container = new Container([$provider2, $provider1, $provider3]);
-
-            $factory->shouldReceive('__invoke')->once()
-                ->with($container)
-                ->andReturn('service1');
-
-            $extension1->shouldReceive('__invoke')->once()
-                ->with($container, 'service1')
-                ->andReturn('service2');
-
-            $extension2->shouldReceive('__invoke')->once()
-                ->with($container, 'service2')
-                ->andReturn('service3');
+            $this->factory1->__invoke->with($container)->returns('service1');
+            $this->extension2->__invoke->with($container, 'service1')->returns('service2');
+            $this->extension1->__invoke->with($container, 'service2')->returns('service3');
+            $this->extension3->__invoke->with($container, 'service3')->returns('service4');
 
             $test = $container->get('id');
 
-            expect($test)->to->be->equal('service3');
+            expect($test)->toEqual('service4');
+            $this->factory1->__invoke->called();
+            $this->extension1->__invoke->called();
+            $this->extension2->__invoke->called();
+            $this->extension3->__invoke->called();
 
         });
 
         it('should fail when the id is not defined', function () {
 
-            $container = new Container([
-                new class () {
-                    public function getFactories() { return []; }
-                    public function getExtensions() { return []; }
-                },
-            ]);
+            $container = new Container([$this->provider1->get()]);
 
-            expect([$container, 'get'])->with('id')->to->throw(NotFoundExceptionInterface::class);
+            $test = function () use ($container) { $container->get('id'); };
+
+            expect($test)->toThrow(new NotFoundException('id'));
 
         });
 

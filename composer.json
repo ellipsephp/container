@@ -23,9 +23,8 @@
         "php": ">=7.1"
     },
     "require-dev": {
-        "peridot-php/peridot": "^1.19",
-        "peridot-php/leo": "^1.6",
-        "mockery/mockery": "^1.0@alpha",
+        "kahlan/kahlan": "^4.0",
+        "eloquent/phony-kahlan": "^1.0",
         "container-interop/service-provider": "^0.4.0"
     },
     "autoload": {

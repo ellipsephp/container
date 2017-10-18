@@ -4,6 +4,8 @@ namespace Ellipse;
 
 use Psr\Container\ContainerInterface;
 
+use Interop\Container\ServiceProviderInterface;
+
 use Ellipse\Container\Exceptions\NotFoundException;
 
 class Container implements ContainerInterface
@@ -22,8 +24,8 @@ class Container implements ContainerInterface
      */
     public function __construct(array $providers = [])
     {
-        $this->registerFactories($providers);
-        $this->registerExtensions($providers);
+        array_map([$this, 'registerFactories'], $providers);
+        array_map([$this, 'registerExtensions'], $providers);
     }
 
     /**
@@ -61,43 +63,35 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Register the factories of the given list of service providers.
+     * Register the factories of the given service provider.
      *
-     * @param array $providers
+     * @param \Interop\Container\ServiceProviderInterface $provider
      * @return void
      */
-    private function registerFactories(array $providers): void
+    private function registerFactories(ServiceProviderInterface $provider): void
     {
-        foreach ($providers as $provider) {
+        $factories = $provider->getFactories();
 
-            $factories = $provider->getFactories();
+        foreach ($factories as $id => $factory) {
 
-            foreach ($factories as $id => $factory) {
-
-                $this->definitions[$id]['factory'] = $factory;
-
-            }
+            $this->definitions[$id]['factory'] = $factory;
 
         }
     }
 
     /**
-     * Register the extensions of the given list of service providers.
+     * Register the extensions of the given service provider.
      *
-     * @param array $providers
+     * @param \Interop\Container\ServiceProviderInterface $provider
      * @return void
      */
-    private function registerExtensions(array $providers)
+    private function registerExtensions(ServiceProviderInterface $provider): void
     {
-        foreach ($providers as $provider) {
+        $extensions = $provider->getExtensions();
 
-            $extensions = $provider->getExtensions();
+        foreach ($extensions as $id => $extension) {
 
-            foreach ($extensions as $id => $extension) {
-
-                $this->definitions[$id]['extensions'][] = $extension;
-
-            }
+            $this->definitions[$id]['extensions'][] = $extension;
 
         }
     }

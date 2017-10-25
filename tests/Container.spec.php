@@ -62,11 +62,6 @@ describe('Container', function () {
             $this->provider1 = mock(ServiceProviderInterface::class);
             $this->provider2 = mock(ServiceProviderInterface::class);
             $this->provider3 = mock(ServiceProviderInterface::class);
-            $this->factory1 = stub(function () {});
-            $this->factory2 = stub(function () {});
-            $this->extension1 = stub(function () {});
-            $this->extension2 = stub(function () {});
-            $this->extension3 = stub(function () {});
 
             $this->provider1->getFactories->returns([]);
             $this->provider1->getExtensions->returns([]);
@@ -74,6 +69,12 @@ describe('Container', function () {
             $this->provider2->getExtensions->returns([]);
             $this->provider3->getFactories->returns([]);
             $this->provider3->getExtensions->returns([]);
+
+            $this->factory1 = stub();
+            $this->factory2 = stub();
+            $this->extension1 = stub();
+            $this->extension2 = stub();
+            $this->extension3 = stub();
 
         });
 
@@ -88,7 +89,6 @@ describe('Container', function () {
             $test = $container->get('id');
 
             expect($test)->toEqual('service');
-            $this->factory1->called();
 
         });
 
@@ -107,7 +107,6 @@ describe('Container', function () {
             $test = $container->get('id');
 
             expect($test)->toEqual('service');
-            $this->factory2->called();
 
         });
 
@@ -127,8 +126,6 @@ describe('Container', function () {
             $test = $container->get('id');
 
             expect($test)->toEqual('service2');
-            $this->extension1->called();
-            $this->extension2->called();
 
         });
 
@@ -153,10 +150,6 @@ describe('Container', function () {
             $test = $container->get('id');
 
             expect($test)->toEqual('service4');
-            $this->factory1->called();
-            $this->extension1->called();
-            $this->extension2->called();
-            $this->extension3->called();
 
         });
 
@@ -181,10 +174,6 @@ describe('Container', function () {
             $test = $container->get('id');
 
             expect($test)->toEqual('service4');
-            $this->factory1->called();
-            $this->extension1->called();
-            $this->extension2->called();
-            $this->extension3->called();
 
         });
 

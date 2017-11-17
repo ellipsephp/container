@@ -110,9 +110,15 @@ describe('Container', function () {
 
         });
 
-        it('should run the extensions associated with the given id with null as parameter when no factory is defined', function () {
+        it('should run the extensions associated with the default value as parameter when no factory is defined', function () {
 
-            $this->provider1->getExtensions->returns(['id' => $this->extension1]);
+            $extension1 = function ($container, string $default = 'default') {
+
+                return $default;
+
+            };
+
+            $this->provider1->getExtensions->returns(['id' => $extension1]);
             $this->provider2->getExtensions->returns(['id' => $this->extension2]);
 
             $container = new Container([
@@ -120,12 +126,11 @@ describe('Container', function () {
                 $this->provider2->get(),
             ]);
 
-            $this->extension1->with($container, null)->returns('service1');
-            $this->extension2->with($container, 'service1')->returns('service2');
+            $this->extension2->with($container, 'default')->returns('service');
 
             $test = $container->get('id');
 
-            expect($test)->toEqual('service2');
+            expect($test)->toEqual('service');
 
         });
 

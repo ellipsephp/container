@@ -111,7 +111,9 @@ class Container implements ContainerInterface
 
         return array_reduce($extensions, function ($service, $extension) {
 
-            return $extension($this, $service);
+            return is_null($service)
+                ? $extension($this)
+                : $extension($this, $service);
 
         }, $service);
     }

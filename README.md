@@ -6,7 +6,7 @@ Minimal **[Psr-11 container](https://github.com/container-interop/fig-standards/
 
 **Installation** `composer require ellipse/container`
 
-**Run tests** `./vendor/bin/kahlan --spec=tests`
+**Run tests** `./vendor/bin/kahlan`
 
 * [Using the container](#using-the-container)
 

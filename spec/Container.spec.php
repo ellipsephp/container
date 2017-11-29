@@ -1,13 +1,14 @@
 <?php
 
-use function Eloquent\Phony\mock;
 use function Eloquent\Phony\stub;
+use function Eloquent\Phony\mock;
 
 use Psr\Container\ContainerInterface;
 
 use Interop\Container\ServiceProviderInterface;
 
 use Ellipse\Container;
+use Ellipse\Container\ServiceFactory;
 use Ellipse\Container\Exceptions\NotFoundException;
 
 describe('Container', function () {
@@ -31,9 +32,9 @@ describe('Container', function () {
 
         });
 
-        it('should return true when the id is defined', function () {
+        it('should return true when the given id is defined', function () {
 
-            $this->provider->getFactories->returns(['id' => function () {}]);
+            $this->provider->getFactories->returns(['id' => stub()]);
 
             $container = new Container([$this->provider->get()]);
 
@@ -43,7 +44,7 @@ describe('Container', function () {
 
         });
 
-        it('should return false when the id is defined', function () {
+        it('should return false when the given id is defined', function () {
 
             $container = new Container([$this->provider->get()]);
 
@@ -78,117 +79,130 @@ describe('Container', function () {
 
         });
 
-        it('should run the factory associated with the given id', function () {
+        context('when the given id is associated to at least one factory', function () {
 
-            $this->provider1->getFactories->returns(['id' => $this->factory1]);
+            context('when the given id is not associated to an extension', function () {
 
-            $container = new Container([$this->provider1->get()]);
+                it('should proxy the last factory associated with the given id', function () {
 
-            $this->factory1->with($container)->returns('service');
+                    $this->provider1->getFactories->returns(['id' => $this->factory1]);
+                    $this->provider2->getFactories->returns(['id' => $this->factory2]);
 
-            $test = $container->get('id');
+                    $container = new Container([
+                        $this->provider1->get(),
+                        $this->provider2->get(),
+                    ]);
 
-            expect($test)->toEqual('service');
+                    $this->factory2->with($container)->returns('service');
 
-        });
+                    $test = $container->get('id');
 
-        it('should run the last factory associated with the given id', function () {
+                    expect($test)->toEqual('service');
 
-            $this->provider1->getFactories->returns(['id' => $this->factory1]);
-            $this->provider2->getFactories->returns(['id' => $this->factory2]);
+                });
 
-            $container = new Container([
-                $this->provider1->get(),
-                $this->provider2->get(),
-            ]);
+            });
 
-            $this->factory2->with($container)->returns('service');
+            context('when the given id is also associated to extensions', function () {
 
-            $test = $container->get('id');
+                it('should proxy the last extension with all the previous values as second parameters', function () {
 
-            expect($test)->toEqual('service');
+                    $this->provider1->getFactories->returns(['id' => $this->factory1]);
+                    $this->provider1->getExtensions->returns(['id' => $this->extension1]);
+                    $this->provider2->getExtensions->returns(['id' => $this->extension2]);
+                    $this->provider3->getExtensions->returns(['id' => $this->extension3]);
 
-        });
+                    $container = new Container([
+                        $this->provider1->get(),
+                        $this->provider2->get(),
+                        $this->provider3->get(),
+                    ]);
 
-        it('should run the extensions associated with the default value as parameter when no factory is defined', function () {
+                    $this->factory1->with($container)->returns('service1');
+                    $this->extension1->with($container, 'service1')->returns('service2');
+                    $this->extension2->with($container, 'service2')->returns('service3');
+                    $this->extension3->with($container, 'service3')->returns('service4');
 
-            $extension1 = function ($container, string $default = 'default') {
+                    $test = $container->get('id');
 
-                return $default;
+                    expect($test)->toEqual('service4');
 
-            };
+                });
 
-            $this->provider1->getExtensions->returns(['id' => $extension1]);
-            $this->provider2->getExtensions->returns(['id' => $this->extension2]);
+                it('should not care about the order the factories and extensions are defined', function () {
 
-            $container = new Container([
-                $this->provider1->get(),
-                $this->provider2->get(),
-            ]);
+                    $this->provider1->getFactories->returns(['id' => $this->factory1]);
+                    $this->provider1->getExtensions->returns(['id' => $this->extension1]);
+                    $this->provider2->getFactories->returns(['id' => $this->factory2]);
+                    $this->provider2->getExtensions->returns(['id' => $this->extension2]);
+                    $this->provider3->getExtensions->returns(['id' => $this->extension3]);
 
-            $this->extension2->with($container, 'default')->returns('service');
+                    $container = new Container([
+                        $this->provider1->get(),
+                        $this->provider2->get(),
+                        $this->provider3->get(),
+                    ]);
 
-            $test = $container->get('id');
+                    $this->factory2->with($container)->returns('service1');
+                    $this->extension1->with($container, 'service1')->returns('service2');
+                    $this->extension2->with($container, 'service2')->returns('service3');
+                    $this->extension3->with($container, 'service3')->returns('service4');
 
-            expect($test)->toEqual('service');
+                    $test = $container->get('id');
 
-        });
+                    expect($test)->toEqual('service4');
 
-        it('should run the extensions associated with the given id with the service built by the factory as parameter', function () {
+                });
 
-            $this->provider1->getFactories->returns(['id' => $this->factory1]);
-            $this->provider1->getExtensions->returns(['id' => $this->extension1]);
-            $this->provider2->getExtensions->returns(['id' => $this->extension2]);
-            $this->provider3->getExtensions->returns(['id' => $this->extension3]);
-
-            $container = new Container([
-                $this->provider1->get(),
-                $this->provider2->get(),
-                $this->provider3->get(),
-            ]);
-
-            $this->factory1->with($container)->returns('service1');
-            $this->extension1->with($container, 'service1')->returns('service2');
-            $this->extension2->with($container, 'service2')->returns('service3');
-            $this->extension3->with($container, 'service3')->returns('service4');
-
-            $test = $container->get('id');
-
-            expect($test)->toEqual('service4');
-
-        });
-
-        it('should not care about the order of the service providers', function () {
-
-            $this->provider1->getFactories->returns(['id' => $this->factory1]);
-            $this->provider1->getExtensions->returns(['id' => $this->extension1]);
-            $this->provider2->getExtensions->returns(['id' => $this->extension2]);
-            $this->provider3->getExtensions->returns(['id' => $this->extension3]);
-
-            $container = new Container([
-                $this->provider2->get(),
-                $this->provider1->get(),
-                $this->provider3->get(),
-            ]);
-
-            $this->factory1->with($container)->returns('service1');
-            $this->extension2->with($container, 'service1')->returns('service2');
-            $this->extension1->with($container, 'service2')->returns('service3');
-            $this->extension3->with($container, 'service3')->returns('service4');
-
-            $test = $container->get('id');
-
-            expect($test)->toEqual('service4');
+            });
 
         });
 
-        it('should fail when the id is not defined', function () {
+        context('when the given id is not associated to a factory', function () {
 
-            $container = new Container([$this->provider1->get()]);
+            context('when the given id is not associated to an extension', function () {
 
-            $test = function () use ($container) { $container->get('id'); };
+                it('should throw a NotFoundException', function () {
 
-            expect($test)->toThrow(new NotFoundException('id'));
+                    $container = new Container;
+
+                    $test = function () use ($container) { $container->get('id'); };
+
+                    $exception = new NotFoundException('id');
+
+                    expect($test)->toThrow($exception);
+
+                });
+
+            });
+
+            context('when the given id is associated to at least one extension', function () {
+
+                it('should proxy all the extensions with the defined default value as second parameter of the first extension', function () {
+
+                    $this->extension1 = function ($container, string $default = 'default') {
+
+                        return $default;
+
+                    };
+
+                    $this->provider1->getExtensions->returns(['id' => $this->extension1]);
+                    $this->provider2->getExtensions->returns(['id' => $this->extension2]);
+
+                    $container = new Container([
+                        $this->provider1->get(),
+                        $this->provider2->get(),
+                    ]);
+
+                    $this->extension2->with($container, 'default')->returns('service');
+
+                    $test = $container->get('id');
+
+                    expect($test)->toEqual('service');
+
+                });
+
+            });
 
         });
 

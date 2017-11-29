@@ -6,16 +6,17 @@ use Psr\Container\ContainerInterface;
 
 use Interop\Container\ServiceProviderInterface;
 
+use Ellipse\Container\ServiceFactory;
 use Ellipse\Container\Exceptions\NotFoundException;
 
 class Container implements ContainerInterface
 {
     /**
-     * List of registered definitions.
+     * List of registered factories.
      *
      * @var array
      */
-    private $definitions = [];
+    private $factories = [];
 
     /**
      * Set up a container with a list of service providers to register.
@@ -33,7 +34,7 @@ class Container implements ContainerInterface
      */
     public function has($id)
     {
-        return array_key_exists($id, $this->definitions);
+        return isset($this->factories[$id]);
     }
 
     /**
@@ -41,21 +42,9 @@ class Container implements ContainerInterface
      */
     public function get($id)
     {
-        $definition = $this->definitions[$id] ?? null;
+        if ($this->has($id)) {
 
-        if (! is_null($definition)) {
-
-            $service = $definition['service'] ?? null;
-
-            if (is_null($service)) {
-
-                $service = $this->makeService($definition);
-
-                $this->definitions[$id]['service'] = $service;
-
-            }
-
-            return $service;
+            return $this->factories[$id]($this);
 
         }
 
@@ -74,7 +63,7 @@ class Container implements ContainerInterface
 
         foreach ($factories as $id => $factory) {
 
-            $this->definitions[$id]['factory'] = $factory;
+            $this->factories[$id] = new ServiceFactory($factory);
 
         }
     }
@@ -91,30 +80,10 @@ class Container implements ContainerInterface
 
         foreach ($extensions as $id => $extension) {
 
-            $this->definitions[$id]['extensions'][] = $extension;
+            $previous = $this->factories[$id] ?? null;
+
+            $this->factories[$id] = new ServiceFactory($extension, $previous);
 
         }
-    }
-
-    /**
-     * Build a service from a definition.
-     *
-     * @param array $definition
-     * @return mixed
-     */
-    private function makeService(array $definition)
-    {
-        $factory = $definition['factory'] ?? null;
-        $extensions = $definition['extensions'] ?? [];
-
-        $service = is_null($factory) ? null : $factory($this);
-
-        return array_reduce($extensions, function ($service, $extension) {
-
-            return is_null($service)
-                ? $extension($this)
-                : $extension($this, $service);
-
-        }, $service);
     }
 }

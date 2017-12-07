@@ -6,14 +6,14 @@ use Psr\Container\ContainerInterface;
 
 use Interop\Container\ServiceProviderInterface;
 
-use Ellipse\Container\Extension;
+use Ellipse\Container\CompositeServiceFactory;
 use Ellipse\Container\CachedServiceFactory;
 use Ellipse\Container\Exceptions\NotFoundException;
 
 class Container implements ContainerInterface
 {
     /**
-     * List of registered factories.
+     * Associative array of alias => service factory pairs.
      *
      * @var array
      */
@@ -26,11 +26,9 @@ class Container implements ContainerInterface
      */
     public function __construct(array $providers = [])
     {
-        $this->factories = $this->cache(
-            $this->reduceExtensions(
-                $providers,
-                $this->reduceFactories($providers)
-            )
+        $this->factories = $this->merge(
+            $this->serviceFactoryMap($providers),
+            $this->serviceExtensionMap($providers)
         );
     }
 
@@ -62,55 +60,58 @@ class Container implements ContainerInterface
      * @param array $providers
      * @return array
      */
-    private function reduceFactories(array $providers): array
+    private function serviceFactoryMap(array $providers): array
     {
-        return array_reduce($providers, function ($factories, ServiceProviderInterface $provider) {
+        $wrap = function ($factory) { return [$factory]; };
 
-            return array_merge($factories, $provider->getFactories());
+        return array_reduce($providers, function ($factories, ServiceProviderInterface $provider) use ($wrap) {
+
+            return array_merge($factories, array_map($wrap, $provider->getFactories()));
 
         }, []);
     }
 
     /**
-     * Return the given service factory map with all the extensions from the
-     * given service providers.
+     * Return a service extension map from the given service providers.
      *
      * @param array $providers
-     * @param array $factories
      * @return array
      */
-    private function reduceExtensions(array $providers, array $factories): array
+    private function serviceExtensionMap(array $providers): array
     {
-        return array_reduce($providers, function ($factories, ServiceProviderInterface $provider) {
+        $wrap = function ($factory) { return [$factory]; };
 
-            $extensions = $provider->getExtensions();
+        return array_reduce($providers, function ($extensions, ServiceProviderInterface $provider) use ($wrap) {
 
-            foreach ($extensions as $id => $extension) {
+            return array_merge_recursive($extensions, array_map($wrap, $provider->getExtensions()));
 
-                $previous = $factories[$id] ?? null;
-
-                $factories[$id] = is_null($previous)
-                    ? $extension
-                    : new Extension($extension, $previous);
-
-            }
-
-            return $factories;
-
-        }, $factories);
+        }, []);
     }
 
     /**
-     * Return the given service factory map with all its service factories
-     * wrapped inside a cached service factory.
+     * Return the map resulting from merging the given service factory map and
+     * service extension map.
      *
      * @param array $factories
+     * @param array $extensions
      * @return array
      */
-    private function cache(array $factories): array
+    private function merge(array $factories, array $extensions): array
     {
-        $cache = function (callable $factory) { return new CachedServiceFactory($factory); };
+        return array_map([$this, 'factory'], array_merge_recursive($factories, $extensions));
+    }
 
-        return array_map($cache, $factories);
+    /**
+     * Return a cached composite service factory from the given array of service
+     * factories.
+     *
+     * @param array $factories
+     * @return \Ellipse\Container\CachedServiceFactory
+     */
+    private function factory(array $factories): CachedServiceFactory
+    {
+        return new CachedServiceFactory(
+            new CompositeServiceFactory($factories)
+        );
     }
 }

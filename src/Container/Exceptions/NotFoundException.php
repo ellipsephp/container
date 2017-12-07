@@ -2,11 +2,11 @@
 
 namespace Ellipse\Container\Exceptions;
 
-use Exception;
+use RuntimeException;
 
 use Psr\Container\NotFoundExceptionInterface;
 
-class NotFoundException extends Exception implements NotFoundExceptionInterface
+class NotFoundException extends RuntimeException implements NotFoundExceptionInterface
 {
     public function __construct($id)
     {

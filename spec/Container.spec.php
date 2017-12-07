@@ -78,11 +78,11 @@ describe('Container', function () {
 
         });
 
-        context('when the given id is associated to at least one factory', function () {
+        context('when the given id is associated to at least one service factory', function () {
 
             context('when the given id is not associated to an extension', function () {
 
-                it('should proxy the last factory associated with the given id', function () {
+                it('should proxy the last service factory associated with the given id', function () {
 
                     $this->provider1->getFactories->returns(['id' => $this->factory1]);
                     $this->provider2->getFactories->returns(['id' => $this->factory2]);
@@ -128,7 +128,7 @@ describe('Container', function () {
 
                 });
 
-                it('should not care about the order the factories and extensions are defined', function () {
+                it('should not care about the order the service factories and extensions are defined', function () {
 
                     $this->provider1->getFactories->returns(['id' => $this->factory1]);
                     $this->provider1->getExtensions->returns(['id' => $this->extension1]);
@@ -157,7 +157,7 @@ describe('Container', function () {
 
         });
 
-        context('when the given id is not associated to a factory', function () {
+        context('when the given id is not associated to a service factory', function () {
 
             context('when the given id is not associated to an extension', function () {
 

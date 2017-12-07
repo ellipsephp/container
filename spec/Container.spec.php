@@ -8,7 +8,6 @@ use Psr\Container\ContainerInterface;
 use Interop\Container\ServiceProviderInterface;
 
 use Ellipse\Container;
-use Ellipse\Container\ServiceFactory;
 use Ellipse\Container\Exceptions\NotFoundException;
 
 describe('Container', function () {
@@ -201,6 +200,31 @@ describe('Container', function () {
                     expect($test)->toEqual('service');
 
                 });
+
+            });
+
+        });
+
+        context('when the ->get() method is called many times with the same id', function () {
+
+            it('should return the same value (===)', function () {
+
+                $instance1 = new class {};
+                $instance2 = new class {};
+
+                $this->provider1->getFactories->returns(['id' => $this->factory1]);
+
+                $container = new Container([
+                    $this->provider1->get(),
+                    $this->provider2->get(),
+                ]);
+
+                $this->factory1->with($container)->returns($instance1, $instance2);
+
+                $test1 = $container->get('id');
+                $test2 = $container->get('id');
+
+                expect($test1)->toBe($test2);
 
             });
 

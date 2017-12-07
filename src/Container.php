@@ -6,7 +6,8 @@ use Psr\Container\ContainerInterface;
 
 use Interop\Container\ServiceProviderInterface;
 
-use Ellipse\Container\ServiceFactory;
+use Ellipse\Container\Extension;
+use Ellipse\Container\CachedServiceFactory;
 use Ellipse\Container\Exceptions\NotFoundException;
 
 class Container implements ContainerInterface
@@ -19,14 +20,18 @@ class Container implements ContainerInterface
     private $factories = [];
 
     /**
-     * Set up a container with a list of service providers to register.
+     * Set up a container with the given array of service providers.
      *
      * @param array $providers
      */
     public function __construct(array $providers = [])
     {
-        array_map([$this, 'registerFactories'], $providers);
-        array_map([$this, 'registerExtensions'], $providers);
+        $this->factories = $this->cache(
+            $this->reduceExtensions(
+                $providers,
+                $this->reduceFactories($providers)
+            )
+        );
     }
 
     /**
@@ -52,38 +57,60 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Register the factories of the given service provider.
+     * Return a service factory map from the given service providers.
      *
-     * @param \Interop\Container\ServiceProviderInterface $provider
-     * @return void
+     * @param array $providers
+     * @return array
      */
-    private function registerFactories(ServiceProviderInterface $provider): void
+    private function reduceFactories(array $providers): array
     {
-        $factories = $provider->getFactories();
+        return array_reduce($providers, function ($factories, ServiceProviderInterface $provider) {
 
-        foreach ($factories as $id => $factory) {
+            return array_merge($factories, $provider->getFactories());
 
-            $this->factories[$id] = new ServiceFactory($factory);
-
-        }
+        }, []);
     }
 
     /**
-     * Register the extensions of the given service provider.
+     * Return the given service factory map with all the extensions from the
+     * given service providers.
      *
-     * @param \Interop\Container\ServiceProviderInterface $provider
-     * @return void
+     * @param array $providers
+     * @param array $factories
+     * @return array
      */
-    private function registerExtensions(ServiceProviderInterface $provider): void
+    private function reduceExtensions(array $providers, array $factories): array
     {
-        $extensions = $provider->getExtensions();
+        return array_reduce($providers, function ($factories, ServiceProviderInterface $provider) {
 
-        foreach ($extensions as $id => $extension) {
+            $extensions = $provider->getExtensions();
 
-            $previous = $this->factories[$id] ?? null;
+            foreach ($extensions as $id => $extension) {
 
-            $this->factories[$id] = new ServiceFactory($extension, $previous);
+                $previous = $factories[$id] ?? null;
 
-        }
+                $factories[$id] = is_null($previous)
+                    ? $extension
+                    : new Extension($extension, $previous);
+
+            }
+
+            return $factories;
+
+        }, $factories);
+    }
+
+    /**
+     * Return the given service factory map with all its service factories
+     * wrapped inside a cached service factory.
+     *
+     * @param array $factories
+     * @return array
+     */
+    private function cache(array $factories): array
+    {
+        $cache = function (callable $factory) { return new CachedServiceFactory($factory); };
+
+        return array_map($cache, $factories);
     }
 }

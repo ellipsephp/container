@@ -10,6 +10,10 @@ class NotFoundException extends RuntimeException implements NotFoundExceptionInt
 {
     public function __construct($id)
     {
-        parent::__construct(sprintf('Identifier "%s" is not defined.', $id));
+        $template = "Identifier '%s' is not registered in the container";
+
+        $msg = sprintf($template, $id);
+
+        parent::__construct($msg);
     }
 }

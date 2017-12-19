@@ -4,10 +4,12 @@ use function Eloquent\Phony\stub;
 use function Eloquent\Phony\mock;
 
 use Psr\Container\ContainerInterface;
+use Psr\Container\ContainerExceptionInterface;
 
 use Interop\Container\ServiceProviderInterface;
 
 use Ellipse\Container;
+use Ellipse\Container\Exceptions\ContainerException;
 use Ellipse\Container\Exceptions\NotFoundException;
 
 describe('Container', function () {
@@ -225,6 +227,30 @@ describe('Container', function () {
                 $test2 = $container->get('id');
 
                 expect($test1)->toBe($test2);
+
+            });
+
+        });
+
+        context('when the factory throw an ContainerExceptionInterface', function () {
+
+            it('should be wrapped inside a ContainerException', function () {
+
+                $exception = mock([Throwable::class, ContainerExceptionInterface::class])->get();
+
+                $this->provider1->getFactories->returns(['id' => $this->factory1]);
+
+                $container = new Container([
+                    $this->provider1->get(),
+                ]);
+
+                $this->factory1->with($container)->throws($exception);
+
+                $test = function () use ($container) { $container->get('id'); };
+
+                $exception = new ContainerException('id', $exception);
+
+                expect($test)->toThrow($exception);
 
             });
 

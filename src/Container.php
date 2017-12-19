@@ -3,11 +3,13 @@
 namespace Ellipse;
 
 use Psr\Container\ContainerInterface;
+use Psr\Container\ContainerExceptionInterface;
 
 use Interop\Container\ServiceProviderInterface;
 
 use Ellipse\Container\CompositeServiceFactory;
 use Ellipse\Container\CachedServiceFactory;
+use Ellipse\Container\Exceptions\ContainerException;
 use Ellipse\Container\Exceptions\NotFoundException;
 
 class Container implements ContainerInterface
@@ -47,7 +49,17 @@ class Container implements ContainerInterface
     {
         if ($this->has($id)) {
 
-            return $this->factories[$id]($this);
+            try {
+
+                return $this->factories[$id]($this);
+
+            }
+
+            catch (ContainerExceptionInterface $e) {
+
+                throw new ContainerException($id, $e);
+
+            }
 
         }
 

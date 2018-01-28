@@ -11,6 +11,7 @@ use Interop\Container\ServiceProviderInterface;
 use Ellipse\Container;
 use Ellipse\Container\Exceptions\ContainerException;
 use Ellipse\Container\Exceptions\NotFoundException;
+use Ellipse\Container\Exceptions\ServiceProviderTypeException;
 
 describe('Container', function () {
 
@@ -19,6 +20,52 @@ describe('Container', function () {
         $container = new Container();
 
         expect($container)->toBeAnInstanceOf(ContainerInterface::class);
+
+    });
+
+    context('when all elements of the given array are implementations of ServiceProviderInterface', function () {
+
+        it('should not fail', function () {
+
+            $provider1 = mock(ServiceProviderInterface::class);
+            $provider2 = mock(ServiceProviderInterface::class);
+
+            $provider1->getFactories->returns([]);
+            $provider1->getExtensions->returns([]);
+            $provider2->getFactories->returns([]);
+            $provider2->getExtensions->returns([]);
+
+            $providers = [$provider1->get(), $provider2->get()];
+
+            $test = function () use ($providers) { new Container($providers); };
+
+            expect($test)->not->toThrow();
+
+        });
+
+    });
+
+    context('when any element of the given array is not an implementation of ServiceProviderInterface', function () {
+
+        it('should throw a ServiceProviderTypeException', function () {
+
+            $provider1 = mock(ServiceProviderInterface::class);
+            $provider2 = mock(ServiceProviderInterface::class);
+
+            $provider1->getFactories->returns([]);
+            $provider1->getExtensions->returns([]);
+            $provider2->getFactories->returns([]);
+            $provider2->getExtensions->returns([]);
+
+            $providers = [$provider1->get(), 'provider', $provider2->get()];
+
+            $test = function () use ($providers) { new Container($providers); };
+
+            $exception = new ServiceProviderTypeException($providers, new TypeError());
+
+            expect($test)->toThrow($exception);
+
+        });
 
     });
 

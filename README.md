@@ -8,11 +8,13 @@ Minimal **[Psr-11 container](http://www.php-fig.org/psr/psr-11/meta/)** implemen
 
 **Run tests** `./vendor/bin/kahlan`
 
-* [Using the container](#using-the-container)
+* [Getting started](#getting-started)
 
-## Using the container
+## Getting started
 
-The container takes an array of service providers on instantiation. This is the only way of registering service providers and service definitions.
+The `Ellipse\Container` class constructor takes an array of `Interop\Container\ServiceProviderInterface` implementations. This is the only way of registering service providers and service definitions into the container.
+
+An `Ellipse\Container\Exceptions\ServiceProviderTypeException` is thrown when any element of the array passed to the `Container` class constructor is not an implementation of `ServiceProviderInterface`.
 
 ```php
 <?php

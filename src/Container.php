@@ -19,6 +19,8 @@ class Container extends AbstractContainer
     {
         try {
 
+            $providers = array_values($providers);
+
             parent::__construct(...$providers);
 
         }

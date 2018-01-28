@@ -25,21 +25,47 @@ describe('Container', function () {
 
     context('when all elements of the given array are implementations of ServiceProviderInterface', function () {
 
-        it('should not fail', function () {
+        context('when the array of providers is not an associative array', function () {
 
-            $provider1 = mock(ServiceProviderInterface::class);
-            $provider2 = mock(ServiceProviderInterface::class);
+            it('should not fail', function () {
 
-            $provider1->getFactories->returns([]);
-            $provider1->getExtensions->returns([]);
-            $provider2->getFactories->returns([]);
-            $provider2->getExtensions->returns([]);
+                $provider1 = mock(ServiceProviderInterface::class);
+                $provider2 = mock(ServiceProviderInterface::class);
 
-            $providers = [$provider1->get(), $provider2->get()];
+                $provider1->getFactories->returns([]);
+                $provider1->getExtensions->returns([]);
+                $provider2->getFactories->returns([]);
+                $provider2->getExtensions->returns([]);
 
-            $test = function () use ($providers) { new Container($providers); };
+                $providers = [$provider1->get(), $provider2->get()];
 
-            expect($test)->not->toThrow();
+                $test = function () use ($providers) { new Container($providers); };
+
+                expect($test)->not->toThrow();
+
+            });
+
+        });
+
+        context('when the array of providers is an associative array', function () {
+
+            it('should not fail', function () {
+
+                $provider1 = mock(ServiceProviderInterface::class);
+                $provider2 = mock(ServiceProviderInterface::class);
+
+                $provider1->getFactories->returns([]);
+                $provider1->getExtensions->returns([]);
+                $provider2->getFactories->returns([]);
+                $provider2->getExtensions->returns([]);
+
+                $providers = ['provider1' => $provider1->get(), 'provider2' => $provider2->get()];
+
+                $test = function () use ($providers) { new Container($providers); };
+
+                expect($test)->not->toThrow();
+
+            });
 
         });
 

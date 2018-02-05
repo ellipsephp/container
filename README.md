@@ -1,6 +1,6 @@
 # Container
 
-Minimal **[Psr-11 container](http://www.php-fig.org/psr/psr-11/meta/)** implementation handling **[service provider interop](https://github.com/container-interop/service-provider)**.
+Minimal **[Psr-11 container](http://www.php-fig.org/psr/psr-11/)** implementation handling **[service provider interop](https://github.com/container-interop/service-provider)**.
 
 **Require** php >= 7.1
 

@@ -2,7 +2,7 @@
 
 Minimal **[Psr-11 container](http://www.php-fig.org/psr/psr-11/)** implementation handling **[service provider interop](https://github.com/container-interop/service-provider)**.
 
-**Require** php >= 7.1
+**Require** php >= 7.0
 
 **Installation** `composer require ellipse/container`
 

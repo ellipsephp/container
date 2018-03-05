@@ -19,9 +19,13 @@ describe('ServiceProviderTypeException', function () {
             1,
         ];
 
-        $this->previous = mock(TypeError::class)->get();
+        $this->exception = new ServiceProviderTypeException($providers);
 
-        $this->exception = new ServiceProviderTypeException($providers, $this->previous);
+    });
+
+    it('should extend TypeError', function () {
+
+        expect($this->exception)->toBeAnInstanceOf(TypeError::class);
 
     });
 
@@ -38,18 +42,6 @@ describe('ServiceProviderTypeException', function () {
             $test = $this->exception->getMessage();
 
             expect($test)->toContain('string');
-
-        });
-
-    });
-
-    describe('->getPrevious()', function () {
-
-        it('should return the previous exception', function () {
-
-            $test = $this->exception->getPrevious();
-
-            expect($test)->toBe($this->previous);
 
         });
 

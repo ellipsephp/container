@@ -87,7 +87,7 @@ describe('Container', function () {
 
             $test = function () use ($providers) { new Container($providers); };
 
-            $exception = new ServiceProviderTypeException($providers, new TypeError());
+            $exception = new ServiceProviderTypeException($providers);
 
             expect($test)->toThrow($exception);
 

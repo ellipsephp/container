@@ -43,7 +43,7 @@ class Container implements ContainerInterface
 
         catch (TypeError $e) {
 
-            throw new ServiceProviderTypeException($providers, $e);
+            throw new ServiceProviderTypeException($providers);
 
         }
     }

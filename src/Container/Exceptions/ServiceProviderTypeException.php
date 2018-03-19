@@ -8,22 +8,20 @@ use Psr\Container\ContainerExceptionInterface;
 
 use Interop\Container\ServiceProviderInterface;
 
+use Ellipse\Exceptions\TypeErrorMessage;
+
 class ServiceProviderTypeException extends TypeError implements ContainerExceptionInterface
 {
     public function __construct(array $providers)
     {
-        $template = "Trying to use a value of type %s as service provider - object implementing %s expected";
-
         $value = current(array_filter($providers, function ($provider) {
 
             return ! $provider instanceof ServiceProviderInterface;
 
         }));
 
-        $type = is_object($value) ? get_class($value) : gettype($value);
+        $msg = new TypeErrorMessage('service provider', $value, ServiceProviderInterface::class);
 
-        $msg = sprintf($template, $type, ServiceProviderInterface::class);
-
-        parent::__construct($msg);
+        parent::__construct((string) $msg);
     }
 }
